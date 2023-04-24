@@ -1,0 +1,120 @@
+---
+title: "EC 420 Final Project - Housing Prices and Election Years"
+author: "David Selemba"
+date: "2023-04-10"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#Research Question/Motivation: Does the instability of election years impact the US housing market? 
+
+Due to the wild surges in the real estate market of the past few years, I thought it would be interesting to see if there is any correlation on large shifts relating to upcoming elections in the US. With politicians more focused on their campaigns and reelection or becoming lame-duck in office, they may have less focus towards stimulating the economy through policy. In addition, since US home buyers will have less certainty on what they can expect from their government and both local and national politicians, they will not be able to as accurately predict their feelings of the market and may be less inclined to make this large financial commitment. 
+
+
+#Method: 
+
+The econometric model I used to carry out this analysis was a multivariate regression model. The choice of model was due to the numerous factors that play into the property valuation and sale prices, with my analysis accounting for a number of different macroeconomic factors. These features, such as the unemployment rate, inflation, mortgage rate, foreclosure rate, and change in GDP by quarter, as well as cost of rental homes later in the analysis. With the use of a dummy variable, we will be able to model for whether or not it was an election year and see the correlation this has with housing prices. I also created a model where the rent CPI is added to the multivariate regression, as this is seemingly a ommitted variable when initially carrying out my models.
+
+
+```{r, echo=FALSE, include=FALSE}
+#Import relevant packages for data cleaning
+library(tidyverse)
+library(car)
+```
+
+
+#Data:
+
+The data I am using comes from a number of different sources, including Kaggle and the St. Louis Federal Reserve. Each column of the below combined data frame housing is as follows:
+***HPI*** - Housing Price Index, index that measures the movement of a single family home over a period of time, with the first quarter as the base(Dependent variable in models)
+***DATE*** - current quarterly date at time of observation
+***UNEM_RATE*** - current unemployment rate during the quarter
+***MORTGAGE*** - current mortgage rate during the quarter
+***Real.GDP..Percent.Change.*** - real GDP adjusted for inflation during the quarter
+***FORECLOSURES*** - foreclosures per 100 mortgages per quarter
+***Inflation.Rate*** - current inflation rate per quarter
+***Effective.Federal.Funds.Rate*** - current federal funds rate per quarter
+***Year*** - current year
+***Rent CPI*** - Consumer Price Index of the cost of renting a home
+
+```{r}
+#Read in data for the project
+housing_demand = read.csv('demand_data.csv')
+inflation = read.csv('index.csv')
+```
+
+```{r}
+#Manipulate inflation/demand data set and add to housing set
+inflation$DATE = as.Date(paste(inflation$Year, inflation$Month, inflation$Day, sep = "-"))
+inflation = inflation%>%
+  filter(Year >= 2000, Month == 1 | Month == 4 | Month == 7 | Month == 10, Day == 1)
+inflation_drop = inflation%>%
+  select(-Month, -Day, -Federal.Funds.Upper.Target, -Federal.Funds.Target.Rate, -Federal.Funds.Lower.Target, -Unemployment.Rate)
+inflation_drop = inflation_drop[,c(5,4,2,3,1)]
+
+housing_demand = housing_demand[1:69,]
+housing_demand$DATE = as.Date(housing_demand$DATE)
+
+housing = merge(housing_demand, inflation_drop, by = "DATE")
+head(housing)
+```
+
+```{r}
+#Summary statistics for HPI to see bounds of data frame
+summary(housing$HPI)
+```
+
+#Results:
+
+```{r}
+#Creating first model without the election year dummy
+housing_fit = lm(HPI ~ UNEM_RATE + MORTGAGE + Real.GDP..Percent.Change. + Inflation.Rate +FORECLOSURES, housing)
+summary(housing_fit)
+```
+This first model shows mostly negative correlations for all variables involved in the multivariate regression. This is to be expected, as higher unemployment, mortgage rates, and foreclosures per 100 would all signal difficult economic times and in turn lower housing costs. The only value that shows as statistically significant, at least by 0.1, is mortgage rate, as these are seemingly heavily correlated. In addition, the inflation feature sees only a small increase in HPI (0.115) for every 1% increase in the rate. It also has a p-value of 1, so due to it's statistical insignificance and very small impact on the estimate, we can exclude this from further analysis entirely.
+
+
+```{r}
+#Create a dummy variable based on whether the current year is an election year (i.e. 2000, 2004, etc.)
+housing$election_year = 0
+housing$election_year[housing$Year %in% c(2000,2004,2008,2012,2016)] = 1
+```
+
+```{r}
+#Creating the model with the dummy variable for election year
+housing_fit_election = lm(HPI ~ UNEM_RATE + MORTGAGE + Real.GDP..Percent.Change. +FORECLOSURES + election_year, housing)
+summary(housing_fit_election)
+```
+After adding the election year variable to the model, we see that it has a -8.5625 decrease in HPI for the quarter when it is an election year. However, the p-value just misses significance at the alpha = 0.1 level, so we cannot determine for certain how important this feature is to our model. It would seemingly be beneficial to have data from years prior to 2000 for more certainty on the importance of this feature. The impact on r-squared was only minor as well, moving from 0.3409 to 0.3681, which means it only plays a small part in explaining the variance on its own.
+
+
+```{r}
+#Adding the home rental price variable to the data frame
+rentals = read.csv('rentals.csv')
+rentals$DATE = as.Date(rentals$DATE)
+rentals <- subset(rentals, format(DATE, "%m") %in% c("01", "04", "07", "10"))
+colnames(rentals) = c("DATE", "Rent_CPI")
+housing_rentals = merge(housing, rentals, by = "DATE")
+head(housing_rentals)
+```
+
+
+```{r}
+#Creating the multivariate model with the rental price variable
+rentals_fit = lm(HPI ~ UNEM_RATE + MORTGAGE + Real.GDP..Percent.Change. +FORECLOSURES + election_year + Rent_CPI, housing_rentals)
+summary(rentals_fit)
+```
+```{r}
+#Create a plot that shows fitted line on relationship of variables when all other predictor features are held constant
+avPlots(rentals_fit)
+```
+
+The final model that incorporates the current rent CPI shows a positive correlation between the two variables, stating that a one unit change in rent CPI results in estimated increase of 1.17818 in HPI. This would make sense, as when renting a house it costly, it would also in turn make buying a home more costly as the markets would move to meet one another's direction. This feature is significant at a near-zero level, while also making a number of other large estimators significant as well. This also changed the sign on the estimators for mortgage and unemployment rate, meaning an increase in unemployment rate will cause an increase in the HPI. The change means that these variables are highly correlated with rent costs, so by excluding it from earlier models, there was some bias in the results.
+
+
+
+#Conclusions:
+
+After interpreting the results, it can be concluded that election years do have a negative correlation to the estimated cost of purchasing a single family home, although we can not say at what significance level. It is also seen now that the price of rental properties and homes plays the largest significance in our models in determining the HPI for the US. This makes intuitive sense in that when renting costs increase, buying costs will increase unilaterally. Using this information, it would seemingly make sense to purchase a home during the election years if one knows they will be financially stable in upcoming years despite the possible political and economic uncertainty. To carry out further research, the first possible task would be to find accurate data for years preceding 2000 to find if this conclusion is held through a greater number of observations. Some fo the data could have been heavily impacted by the economic recession of 2008 and caused some trends that are not as common, so added data could allow for greater normalization. It would also be useful to carry out this analysis by region, as HPI is an aggregated variable, so it may be possible that some areas see positive shifts during election years while others see the same correlation. This could be due to the demographic of the region or the local election outcomes as well. In the future, it may also be useful to explore other models that fit the data as well, as a more advanced machine learning model may allow us to optimize the features used to predict well into the future. 
+
