@@ -12,4 +12,4 @@ NFL-Play_by_Play_Film_Model.ipynb - Computational Modeling and Data Science 2 pr
 
 
 
-Please contact me at selembad@msu.edu with any questions
+Please contact me at selembad@msu.edu with any questions or inquiries
