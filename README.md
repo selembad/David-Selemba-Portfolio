@@ -10,6 +10,8 @@ EC 420 Final Project Presentation.pdf- presentation of Intro Econometrics projec
 
 NFL-Play_by_Play_Film_Model.ipynb - Computational Modeling and Data Science 2 project on the optimal usage of subjective PFF film scores for college and NFL quarterbacks. The file is part of a larger group project and used both OLS and machine learning models (pandas, numpy, sklearn train_test_split, MLP_Classifier, matplotlib)
 
+College Basketball Draft Declaration Research- Senior capstone project analyzed in R Studio focused on optimizing NBA draft selection and long term earnings. Focus included data wrangling and scraping as well as regression techniques using a discontoinuity. 
 
+EV Charging Research- Research paper and analysis in R focused on the impact of chagring station growth throughout NY state on the rise of electric vehicles. Focus included data visualization, wrangling, and modeling using multiple linear regression and KNN.
 
 Please contact me at selembad@msu.edu with any questions or inquiries
