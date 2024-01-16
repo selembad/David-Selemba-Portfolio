@@ -1,4 +1,4 @@
-# David-Selemba-Portfolio
+# David Selemba Project and Research Portfolio
 
 The items in the portfolio are as follows:
 
